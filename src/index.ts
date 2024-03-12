@@ -1,21 +1,25 @@
 type ErrorClass = new (...args: any[]) => Error;
 
-export function throws<A, T, const E extends ErrorClass[]>(
-  fn: (...args: A[]) => T,
-  ...errors: E
-): (...args: A[]) => CatchEnforcer<E, T> {
-  return (...args: A[]) => createCatchEnforcer(fn, args, [], errors);
+export function throws<
+  Args,
+  Return,
+  const E extends { [key in string]: ErrorClass }
+>(
+  fn: (...args: Args[]) => Return,
+  errors: E
+): (...args: Args[]) => CatchEnforcer<E, Return> {
+  return (...args: Args[]) => createCatchEnforcer(fn, args, [], errors);
 }
 
-type ShiftTuple<T extends any[]> = T extends [T[0], ...infer R] ? R : never;
-
-type CatchEnforcer<E extends ErrorClass[], T> = {
-  catch: <const _E extends E[number]>(
-    e: _E,
+type CatchEnforcer<
+  E extends Record<string, ErrorClass>,
+  T
+> = {
+  [K in keyof E as `catch${Capitalize<string & K>}`]: <const _E extends E[K]>(
     cb: (e: InstanceType<_E>) => void
-  ) => ShiftTuple<E> extends []
+  ) => Omit<E, K> extends Record<string, never>
     ? T | undefined
-    : CatchEnforcer<ShiftTuple<E>, T>;
+    : CatchEnforcer<Omit<E, K>, T>;
 };
 
 type Catcher<E extends ErrorClass> = {
@@ -23,40 +27,40 @@ type Catcher<E extends ErrorClass> = {
   cb: (e: InstanceType<E>) => void;
 };
 
-function createCatchEnforcer<A, T, const E extends ErrorClass[]>(
+function createCatchEnforcer<
+  A,
+  T,
+  const E extends { [key in string]: ErrorClass }
+>(
   fn: (...args: A[]) => T,
   args: A[],
-  catchers: Catcher<E[number]>[],
+  catchers: Catcher<E[string]>[],
   errors: E
 ): CatchEnforcer<E, T> {
-  return {
-    catch: <const _E extends E[number]>(
-      errorClass: _E,
+  const keys = Object.keys(errors);
+
+  return keys.reduce((catchObj, errorName: keyof E & string) => {
+    const catchKey = `catch${capitalize(errorName)}` as keyof CatchEnforcer<E, T>;
+
+    catchObj[catchKey] = (<const _E extends E[typeof errorName]>(
       cb: (error: InstanceType<_E>) => void
     ) => {
-      if (!errors.find(_errorClass => _errorClass === errorClass)) {
-        console.error('Provided error class:', errorClass);
-        console.error('Catchable error classes:', errors);
-        throw new Error(`Error not catchable`);
-      }
-
-      const remainingErrors = errors.filter(
-        e => e !== errorClass
-      ) as ShiftTuple<E>;
+      const errorClass = errors[errorName];
+      const remainingErrors = deletePropertyFromObject(errors, errorName as string);
 
       catchers.push({ errorClass, cb });
 
-      if (remainingErrors.length === 0) {
+      if (Object.keys(remainingErrors).length === 0) {
         // should attempt to return original function value
         // Dunno why TS doesn't like returning the original function value here
         try {
-          return fn(...args) as any;
+          return fn(...args);
         } catch (err) {
           const catcher = catchers.find(c => err instanceof c.errorClass);
 
           if (catcher) {
             // We tested err instance above
-            catcher.cb(err as InstanceType<E[number]>);
+            catcher.cb(err as InstanceType<E[string]>);
           } else {
             throw err;
           }
@@ -65,13 +69,32 @@ function createCatchEnforcer<A, T, const E extends ErrorClass[]>(
           return undefined;
         }
       } else {
-        return createCatchEnforcer<A, T, ShiftTuple<E>>(
+        return createCatchEnforcer<A, T, Omit<E, typeof errorName>>(
           fn,
           args,
           catchers,
-          errors.filter(e => e !== errorClass) as ShiftTuple<E>
+          remainingErrors
         );
       }
-    }
-  };
+
+      // Not ideal but considering the dynamic nature here I'm not sure
+      // of an alternative.
+    }) as CatchEnforcer<E, T>[keyof CatchEnforcer<E, T>];
+
+    return catchObj;
+  }, {} as CatchEnforcer<E, T>);
+}
+
+
+function deletePropertyFromObject<
+  T extends Record<string, unknown>,
+  K extends keyof T
+>(obj: T, key: K): T {
+  const { [key]: _, ...rest } = obj;
+
+  return rest as T;
+}
+
+function capitalize(str: string) {
+  return str.charAt(0).toUpperCase() + str.slice(1);
 }

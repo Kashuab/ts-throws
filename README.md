@@ -19,31 +19,37 @@ const getStringLength = throws(
     
     return str.length;
   },
-  StringEmptyError,
-  NoAsdfError
+  { StringEmptyError, NoAsdfError }
 );
 
+/*
+  `throws` will force you to catch the provided errors.
+  It dynamically generates catch* methods based on the object of errors
+  you provide. The error names will be automatically capitalized.
+*/
+
 let length = getStringLength(' ')
-  .catch(StringEmptyError, err => console.error('String is empty'))
-  .catch(NoAsdfError, err => console.error('String cannot be asdf'));
+  .catchStringEmptyError(err => console.error('String is empty'))
+  .catchNoAsdfError(err => console.error('String cannot be asdf'));
 
 // length is undefined, logged 'String is empty'
 
 length = getStringLength('asdf')
-  .catch(StringEmptyError, err => console.error('String is empty'))
-  .catch(NoAsdfError, err => console.error('String cannot be asdf'));
+  .catchStringEmptyError(err => console.error('String is empty'))
+  .catchNoAsdfError(err => console.error('String cannot be asdf'));
 
 // length is undefined, logged 'String cannot be asdf'
 
 length = getStringLength(' ')
-  .catch(StringEmptyError, err => console.error('String is empty'))
+  .catchStringEmptyError, err => console.error('String is empty'))
 
-// Only one error caught, length is { catch: (errorClass: NoAsdfError, cb: (err: NoAsdfError) => void) => number | undefined }
+// Only one error caught, length is:
+// { catchNoAsdfError: (err: NoAsdfError) => void) => number | undefined }
 // Function logic not invoked until last error is handled with `.catch`
 
 length = getStringLength('hello world')
-  .catch(StringEmptyError, err => console.error('String is empty'))
-  .catch(NoAsdfError, err => console.error('String cannot be asdf'));
+  .catchStringEmptyError(err => console.error('String is empty'))
+  .catchNoAsdfError(err => console.error('String cannot be asdf'));
 
 // length is 11
 ```
@@ -51,5 +57,3 @@ length = getStringLength('hello world')
 ## TODO
 
 - Support async functions
-- Idea: Allow catch any with `.catch(Error, ...)` or `.catchAny(err => ...)`
-- Tests
