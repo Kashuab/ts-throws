@@ -1,0 +1,24 @@
+{
+  "name": "ts-throws",
+  "version": "1.0.0",
+  "description": "",
+  "type": "module",
+  "main": "index.js",
+  "repository": "",
+  "source": "./src/index.ts",
+  "exports": {
+    "import": "./dist/ts-throws.esm.js",
+    "types": "./dist/index.d.ts"
+  },
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "microbundle -o dist",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "microbundle": "^0.15.1",
+    "typescript": "^5.4.2"
+  }
+}
