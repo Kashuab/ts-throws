@@ -1,11 +1,12 @@
 {
   "name": "ts-throws",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "",
   "type": "module",
   "main": "index.js",
   "repository": "",
   "source": "./src/index.ts",
+  "files": ["./dist"],
   "exports": {
     "import": "./dist/ts-throws.esm.js",
     "types": "./dist/index.d.ts"

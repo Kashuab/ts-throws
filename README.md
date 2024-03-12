@@ -4,6 +4,8 @@ A tiny library that allows you to wrap functions with enforced error checking.
 
 ## Example
 
+`yarn add ts-throws`
+
 ```ts
 import { throws } from 'ts-throws';
 
