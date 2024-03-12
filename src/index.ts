@@ -1,15 +1,17 @@
 type ErrorClass = new (...args: any[]) => Error;
 
 export function throws<
-  Args,
+  Args extends any[],
   Return,
   const E extends { [key in string]: ErrorClass }
 >(
-  fn: (...args: Args[]) => Return,
+  fn: (...args: Args) => Return,
   errors: E
-): (...args: Args[]) => CatchEnforcer<E, Return> {
-  return (...args: Args[]) => createCatchEnforcer(fn, args, [], errors);
+): (...args: Args) => CatchEnforcer<E, Return> {
+  return (...args: Args) => createCatchEnforcer(fn, args, [], errors);
 }
+
+type UnwrapPromise<T extends Promise<unknown>> = T extends Promise<infer V> ? V : never;
 
 type CatchEnforcer<
   E extends Record<string, ErrorClass>,
@@ -18,7 +20,7 @@ type CatchEnforcer<
   [K in keyof E as `catch${Capitalize<string & K>}`]: <const _E extends E[K]>(
     cb: (e: InstanceType<_E>) => void
   ) => Omit<E, K> extends Record<string, never>
-    ? T | undefined
+    ? T extends Promise<unknown> ? Promise<UnwrapPromise<T> | undefined> : undefined
     : CatchEnforcer<Omit<E, K>, T>;
 };
 
@@ -28,12 +30,12 @@ type Catcher<E extends ErrorClass> = {
 };
 
 function createCatchEnforcer<
-  A,
+  A extends any[],
   T,
   const E extends { [key in string]: ErrorClass }
 >(
-  fn: (...args: A[]) => T,
-  args: A[],
+  fn: (...args: A) => T,
+  args: A,
   catchers: Catcher<E[string]>[],
   errors: E
 ): CatchEnforcer<E, T> {
@@ -54,19 +56,19 @@ function createCatchEnforcer<
         // should attempt to return original function value
         // Dunno why TS doesn't like returning the original function value here
         try {
-          return fn(...args);
-        } catch (err) {
-          const catcher = catchers.find(c => err instanceof c.errorClass);
+          const returnValue = fn(...args);
 
-          if (catcher) {
-            // We tested err instance above
-            catcher.cb(err as InstanceType<E[string]>);
-          } else {
-            throw err;
+          if (returnValue instanceof Promise) {
+            return returnValue
+              .catch(err => {
+                return handleThrownError(err);
+              })
           }
 
-          // If we catch an error, return undefined for the original value
-          return undefined;
+          return returnValue;
+        } catch (err) {
+          if (!(err instanceof Error)) throw err;
+          return handleThrownError(err);
         }
       } else {
         return createCatchEnforcer<A, T, Omit<E, typeof errorName>>(
@@ -83,6 +85,20 @@ function createCatchEnforcer<
 
     return catchObj;
   }, {} as CatchEnforcer<E, T>);
+
+  function handleThrownError(err: Error) {
+    const catcher = catchers.find(c => err instanceof c.errorClass);
+
+    if (catcher) {
+      // We tested err instance above
+      catcher.cb(err as InstanceType<E[string]>);
+    } else {
+      throw err;
+    }
+
+    // If we catch an error, return undefined for the original value
+    return undefined;
+  }
 }
 
 

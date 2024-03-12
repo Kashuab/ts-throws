@@ -54,6 +54,33 @@ length = getStringLength('hello world')
 // length is 11
 ```
 
-## TODO
+## Async functions
 
-- Support async functions
+It's plug-and-play:
+
+```ts
+import { throws } from 'ts-throws';
+
+export class BadResponseError extends Error {}
+
+const getResponse = throws(
+  async () => {
+    const response = await fetch('https://some-url.com');
+    if (!response.ok) throw new BadResponseError();
+    
+    return str.length;
+  },
+  { BadResponseError }
+);
+
+const response = await getResponse()
+  .catchBadResponseError(err => {
+    // Received 400+ error
+  });
+
+if (!response) return;
+
+console.log(response); // -> Response
+```
+
+Of course, if you don't catch the right errors you're still blocked from using the provided function.
