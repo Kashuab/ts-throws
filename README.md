@@ -41,7 +41,7 @@ length = getStringLength('asdf')
 // length is undefined, logged 'String cannot be asdf'
 
 length = getStringLength(' ')
-  .catchStringEmptyError, err => console.error('String is empty'))
+  .catchStringEmptyError(err => console.error('String is empty'))
 
 // Only one error caught, length is:
 // { catchNoAsdfError: (err: NoAsdfError) => void) => number | undefined }
