@@ -203,4 +203,12 @@ describe('throws', () => {
         .catchSomeOtherError(() => {})
     }).toThrow()
   });
+
+  it('can run unsafe functions', () => {
+    const fn = createGetStringLengthFunction();
+    const getStringLength = throws(fn, { StringEmptyError }, { allowUnsafe: true });
+
+    expect(() => getStringLength.callUnsafe('')).toThrow(StringEmptyError)
+    expect(getStringLength.callUnsafe('hello')).toBe(5);
+  })
 })

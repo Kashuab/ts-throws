@@ -1,14 +1,33 @@
 type ErrorClass = new (...args: any[]) => Error;
 
+type ThrowsOpts = {
+  allowUnsafe?: boolean;
+}
+
+type FnWithThrows<
+  Args extends any[],
+  Return,
+  E extends { [key in string]: ErrorClass }
+> = (...args: Args) => CatchEnforcer<E, Return>
+
 export function throws<
   Args extends any[],
   Return,
-  const E extends { [key in string]: ErrorClass }
+  const E extends { [key in string]: ErrorClass },
+  const Opts extends ThrowsOpts
 >(
   fn: (...args: Args) => Return,
-  errors: E
-): (...args: Args) => CatchEnforcer<E, Return> {
-  return (...args: Args) => createCatchEnforcer(fn, args, [], errors);
+  errors: E,
+  opts?: Opts
+): FnWithThrows<Args, Return, E> & (Opts['allowUnsafe'] extends true ? { callUnsafe: typeof fn } : {}) {
+  const wrapped = (...args: Args) => createCatchEnforcer(fn, args, [], errors);
+
+  if (opts?.allowUnsafe) {
+    wrapped.callUnsafe = (...args: Args) => fn(...args);
+    return wrapped;
+  }
+
+  return wrapped;
 }
 
 type UnwrapPromise<T extends Promise<unknown>> = T extends Promise<infer V> ? V : never;
