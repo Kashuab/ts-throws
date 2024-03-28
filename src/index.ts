@@ -8,7 +8,7 @@ export function throws<
   fn: (...args: Args) => Return,
   errors: E
 ): (...args: Args) => CatchEnforcer<E, Return> {
-  return (...args: Args) => createCatchEnforcer(fn, args, [], errors);
+  return (...args: Args) => createCatchEnforcer(fn, args, errors, true);
 }
 
 type UnwrapPromise<T extends Promise<unknown>> = T extends Promise<infer V> ? V : never;
@@ -29,30 +29,54 @@ type Catcher<E extends ErrorClass> = {
   cb: (e: InstanceType<E>) => void;
 };
 
+type CachedEnforcerState = {
+  enforcer: CatchEnforcer<any, any>;
+  catchers: Catcher<any>[]
+}
+
+type FnWithState<F extends (...args: any[]) => any> = F & { [cachedEnforcer]?: CachedEnforcerState }
+
+const cachedEnforcer = Symbol('cachedEnforcer');
+
 function createCatchEnforcer<
   A extends any[],
   T,
   const E extends { [key in string]: ErrorClass }
 >(
-  fn: (...args: A) => T,
+  fn: FnWithState<(...args: A) => T>,
   args: A,
-  catchers: Catcher<E[string]>[],
-  errors: E
+  errors: E,
+  firstRun = false
 ): CatchEnforcer<E, T> {
-  const keys = Object.keys(errors);
+  const cached = fn[cachedEnforcer];
 
-  return keys.reduce((catchObj, errorName: keyof E & string) => {
+  if (firstRun && cached?.enforcer) {
+    cached.catchers = [];
+    return cached.enforcer;
+  }
+
+  const errorNames = Object.keys(errors);
+
+  const enforcer = errorNames.reduce((catchObj, errorName: keyof E & string) => {
     const catchKey = `catch${capitalize(errorName)}` as keyof CatchEnforcer<E, T>;
 
     catchObj[catchKey] = (<const _E extends E[typeof errorName]>(
       cb: (error: InstanceType<_E>) => void
     ) => {
+      const state = fn[cachedEnforcer];
+      if (!state) throw new Error('[ts-throws] Expected function to have enforcer state, please open an issue');
+
+      const catchers = state.catchers;
       const errorClass = errors[errorName];
-      const remainingErrors = deletePropertyFromObject(errors, errorName as string);
+
+      if (catchers.some(({ errorClass: e }) => e === errorClass)) {
+        console.error('[ts-throws] Error already handled:', errorClass);
+        throw new Error(`[ts-throws] Duplicate error catch functions are not allowed`);
+      }
 
       catchers.push({ errorClass, cb });
 
-      if (Object.keys(remainingErrors).length === 0) {
+      if (catchers.length === errorNames.length) {
         // should attempt to return original function value
         // Dunno why TS doesn't like returning the original function value here
         try {
@@ -61,22 +85,17 @@ function createCatchEnforcer<
           if (returnValue instanceof Promise) {
             return returnValue
               .catch(err => {
-                return handleThrownError(err);
+                return handleThrownError(err, state.catchers);
               })
           }
 
           return returnValue;
         } catch (err) {
           if (!(err instanceof Error)) throw err;
-          return handleThrownError(err);
+          return handleThrownError(err, state.catchers);
         }
       } else {
-        return createCatchEnforcer<A, T, Omit<E, typeof errorName>>(
-          fn,
-          args,
-          catchers,
-          remainingErrors
-        );
+        return catchObj;
       }
 
       // Not ideal but considering the dynamic nature here I'm not sure
@@ -86,29 +105,23 @@ function createCatchEnforcer<
     return catchObj;
   }, {} as CatchEnforcer<E, T>);
 
-  function handleThrownError(err: Error) {
-    const catcher = catchers.find(c => err instanceof c.errorClass);
+  if (firstRun) fn[cachedEnforcer] = { enforcer, catchers: [] }
 
-    if (catcher) {
-      // We tested err instance above
-      catcher.cb(err as InstanceType<E[string]>);
-    } else {
-      throw err;
-    }
-
-    // If we catch an error, return undefined for the original value
-    return undefined;
-  }
+  return enforcer;
 }
 
+function handleThrownError(err: Error, catchers: Catcher<any>[]) {
+  const catcher = catchers.find(c => err instanceof c.errorClass);
 
-function deletePropertyFromObject<
-  T extends Record<string, unknown>,
-  K extends keyof T
->(obj: T, key: K): T {
-  const { [key]: _, ...rest } = obj;
+  if (catcher) {
+    // We tested err instance above
+    catcher.cb(err);
+  } else {
+    throw err;
+  }
 
-  return rest as T;
+  // If we catch an error, return undefined for the original value
+  return undefined;
 }
 
 function capitalize(str: string) {
