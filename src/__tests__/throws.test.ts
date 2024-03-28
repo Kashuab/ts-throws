@@ -193,6 +193,18 @@ describe('throws', () => {
     expect(fn.mock.lastCall).toBeUndefined();
   });
 
+  it('throws error if duplicate error handler is present', () => {
+    const fn = createGetStringLengthFunction();
+    const getStringLength = throws(fn, { StringEmptyError, StringEmptyError2 })
+
+    expect(() => {
+      getStringLength('hello')
+        .catchStringEmptyError(() => {})
+        // @ts-expect-error
+        .catchStringEmptyError(() => {})
+    }).toThrow()
+  });
+
   it('reports TS error when uncatchable error is used', () => {
     const fn = createGetStringLengthFunction();
     const getStringLength = throws(fn, { StringEmptyError })
