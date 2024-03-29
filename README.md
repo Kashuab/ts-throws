@@ -9,8 +9,8 @@ A tiny library that allows you to wrap functions with enforced error checking.
 ```ts
 import { throws } from 'ts-throws';
 
-class StringEmptyError extends Error {}
-class NoAsdfError extends Error {}
+class StringEmptyError {}
+class NoAsdfError {}
 
 const getStringLength = throws(
   (str: string) => {
@@ -61,7 +61,7 @@ It's plug-and-play:
 ```ts
 import { throws } from 'ts-throws';
 
-export class BadResponseError extends Error {}
+export class BadResponseError {}
 
 const getResponse = throws(
   async () => {
@@ -84,3 +84,10 @@ console.log(response); // -> Response
 ```
 
 Of course, if you don't catch the right errors you're still blocked from using the provided function.
+
+## Pitfalls
+
+- `class CustomError extends Error {}`
+
+  Extending `Error` causes a significant performance hit (~80%). If you don't need things like `Error.stack`, you probably
+  don't need to extend it anyway.

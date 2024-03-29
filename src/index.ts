@@ -1,4 +1,4 @@
-type ErrorClass = new (...args: any[]) => Error;
+type ErrorClass = new (...args: any[]) => {};
 
 export function throws<
   Args extends any[],
@@ -91,7 +91,8 @@ function createCatchEnforcer<
 
           return returnValue;
         } catch (err) {
-          if (!(err instanceof Error)) throw err;
+          // TODO: String error matchers
+          if (!err || typeof err !== 'object') throw err;
           return handleThrownError(err, state.catchers);
         }
       } else {
@@ -110,7 +111,7 @@ function createCatchEnforcer<
   return enforcer;
 }
 
-function handleThrownError(err: Error, catchers: Catcher<any>[]) {
+function handleThrownError(err: object, catchers: Catcher<any>[]) {
   const catcher = catchers.find(c => err instanceof c.errorClass);
 
   if (catcher) {

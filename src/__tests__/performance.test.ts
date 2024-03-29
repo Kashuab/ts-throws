@@ -1,11 +1,11 @@
 import {describe, it} from "vitest";
 import {throws} from "../index.js";
 
-class StringEmptyError extends Error {}
-class StringEmptyError2 extends Error {}
-class StringEmptyError3 extends Error {}
-class StringEmptyError4 extends Error {}
-class StringEmptyError5 extends Error {}
+class StringEmptyError {}
+class StringEmptyError2 {}
+class StringEmptyError3 {}
+class StringEmptyError4 {}
+class StringEmptyError5 {}
 
 const makeThrower = () => (str: string) => {
   const trimmed = str.trim();
@@ -98,9 +98,10 @@ describe('performance', () => {
       return state.runs;
     })();
 
-
-    console.log('Thrower runs per second', throwerRuns);
-    console.log('Returner runs per second', returnerRuns);
-    console.log('ts-throws wrapped runs per second', wrappedThrowerRuns);
+    console.table([
+      { type: 'thrower', ['Runs per second']: throwerRuns.toLocaleString() },
+      { type: 'returner', ['Runs per second']: returnerRuns.toLocaleString() },
+      { type: 'thrower with ts-throws', ['Runs per second']: wrappedThrowerRuns.toLocaleString() },
+    ])
   });
 })
