@@ -91,6 +91,8 @@ function createCatchEnforcer<
 
           return returnValue;
         } catch (err) {
+          // TODO: String error matchers
+          if (!err || typeof err !== 'object') throw err;
           return handleThrownError(err, state.catchers);
         }
       } else {
@@ -109,7 +111,7 @@ function createCatchEnforcer<
   return enforcer;
 }
 
-function handleThrownError(err: ErrorClass, catchers: Catcher<any>[]) {
+function handleThrownError(err: object, catchers: Catcher<any>[]) {
   const catcher = catchers.find(c => err instanceof c.errorClass);
 
   if (catcher) {
