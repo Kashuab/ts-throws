@@ -98,10 +98,10 @@ describe('performance', () => {
       return state.runs;
     })();
 
-    console.table({
-      throwerRuns,
-      returnerRuns,
-      wrappedThrowerRuns
-    })
+    console.table([
+      { type: 'thrower', ['Runs per second']: throwerRuns.toLocaleString() },
+      { type: 'returner', ['Runs per second']: returnerRuns.toLocaleString() },
+      { type: 'thrower with ts-throws', ['Runs per second']: wrappedThrowerRuns.toLocaleString() },
+    ])
   });
 })
