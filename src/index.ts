@@ -85,15 +85,31 @@ function createCatchEnforcer<
 
           if (returnValue instanceof Promise) {
             return returnValue
+              .then(value => {
+                const caught = invokeMatchedErrorCatcher(value, state.catchers);
+                if (caught) return undefined;
+
+                return value;
+              })
               .catch(err => {
-                return invokeMatchedErrorCatcher(err, state.catchers);
+                const caught = invokeMatchedErrorCatcher(err, state.catchers);
+                if (caught) return undefined;
+
+                throw err;
               })
           }
+
+          const caught = invokeMatchedErrorCatcher(returnValue, state.catchers);
+          if (caught) return undefined;
 
           return returnValue;
         } catch (err) {
           if (!err) throw err;
-          return invokeMatchedErrorCatcher(err, state.catchers);
+
+          const caught = invokeMatchedErrorCatcher(err, state.catchers);
+          if (caught) return undefined;
+
+          throw err;
         }
       } else {
         return catchObj;
@@ -111,7 +127,10 @@ function createCatchEnforcer<
   return enforcer;
 }
 
-function invokeMatchedErrorCatcher(err: object | string, catchers: Catcher<ErrorMatcher>[]) {
+/**
+ * Returns `true` if it matched an error and called the catcher callback.
+ */
+function invokeMatchedErrorCatcher(err: any, catchers: Catcher<ErrorMatcher>[]) {
   const catcher = catchers.find(c => {
     if (typeof c.errorMatcher === 'function') {
       return err instanceof c.errorMatcher;
@@ -145,12 +164,10 @@ function invokeMatchedErrorCatcher(err: object | string, catchers: Catcher<Error
   if (catcher) {
     // We tested err instance above
     catcher.cb(err);
+    return true;
   } else {
-    throw err;
+    return false;
   }
-
-  // If we catch an error, return undefined for the original value
-  return undefined;
 }
 
 function capitalize(str: string) {
