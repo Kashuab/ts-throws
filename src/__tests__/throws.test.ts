@@ -130,6 +130,66 @@ describe('throws', () => {
     expect(caught).toBe(false);
   });
 
+  it('can match errors based on string', () => {
+    const fn = throws(() => {
+      throw new Error('message test')
+    }, { SomeError: 'message test' });
+
+    let caught = false;
+
+    fn()
+      .catchSomeError(err => {
+        caught = true;
+      })
+
+    class CustomError extends Error {
+      name = "hello"
+    }
+
+    const fn2 = throws(() => {
+      throw new CustomError()
+    }, { CustomError: 'hello' });
+
+    caught = false;
+
+    fn2()
+      .catchCustomError(err => {
+        caught = true;
+      })
+
+    expect(caught).toBe(true);
+  })
+
+  it('can match errors based on regex', () => {
+    const fn = throws(() => {
+      throw new Error('message test')
+    }, { SomeError: /test/ });
+
+    let caught = false;
+
+    fn()
+      .catchSomeError(err => {
+        caught = true;
+      })
+
+    class CustomError extends Error {
+      name = "hello"
+    }
+
+    const fn2 = throws(() => {
+      throw new CustomError()
+    }, { CustomError: /ello/ });
+
+    caught = false;
+
+    fn2()
+      .catchCustomError(err => {
+        caught = true;
+      })
+
+    expect(caught).toBe(true);
+  })
+
   it('can chain catches in any order', () => {
     let caught = false;
 
