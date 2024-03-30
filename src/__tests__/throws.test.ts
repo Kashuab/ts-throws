@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { throws } from '../index.js';
+import {throws, throwsUnsafe} from '../index.js';
 
 class BadStringError extends Error {}
 class StringEmptyError extends Error {}
@@ -268,6 +268,15 @@ describe('throws', () => {
     expect(fn.mock.lastCall).toBeUndefined();
   });
 
+  it('allows for direct invocations', () => {
+    const fn = createGetStringLengthFunction();
+    const getStringLength = throws(fn, { StringEmptyError })
+
+    const length = getStringLength('hello');
+
+    expect(length).toBe(5);
+  });
+
   it('throws error if duplicate error handler is present', () => {
     const fn = createGetStringLengthFunction();
     const getStringLength = throws(fn, { StringEmptyError, StringEmptyError2 })
@@ -290,4 +299,14 @@ describe('throws', () => {
         .catchSomeOtherError(() => {})
     }).toThrow()
   });
+});
+
+describe('throwsUnsafe', () => {
+  it('does not allow direct invocations', () => {
+    const fn = createGetStringLengthFunction();
+    const getStringLength = throwsUnsafe(fn, { StringEmptyError })
+
+    // @ts-expect-error
+    expect(() => getStringLength()).toThrow(TypeError);
+  })
 })

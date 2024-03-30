@@ -1,6 +1,7 @@
 # `ts-throws`
 
-A tiny library that allows you to wrap functions with enforced error checking.
+A tiny library that allows you to wrap functions with documented error checking. Optionally, you can force consumers
+of a given function to handle errors.
 
 ## Example
 
@@ -23,8 +24,8 @@ const getStringLength = throws(
 )
 ```
 
-`throws` adds a `try` function which will force you to catch the provided errors. If you don't invoke `try`, the
-function behaves normally. This avoids breaking changes, and allows developers to opt-in when desired.
+`throws` adds a `try` function which will force you to catch the provided errors. It will also allow direct invocations
+by calling the function normally. This avoids breaking changes, and allows developers to opt-in when desired.
 It dynamically generates catch* methods based on the object of errors you provide. The error names will be
 automatically capitalized.
 
@@ -54,9 +55,39 @@ length = getStringLength.try('hello world')
 
 // length is 11
 
+// Example direct invocation:
 length = getStringLength('hello world');
-
 // length is 11
+```
+
+## `throwsUnsafe`
+
+If you don't want to allow direct invocations, you can force consumers to handle errors properly via `throwsUnsafe`:
+
+```ts
+import { throwsUnsafe } from 'ts-throws';
+
+class StringEmptyError {}
+class NoAsdfError {}
+
+const getStringLength = throwsUnsafe(
+  (str: string) => {
+    if (!str.trim()) throw new StringEmptyError();
+    if (str === 'asdf') throw new NoAsdfError();
+
+    return str.length;
+  },
+  { StringEmptyError, NoAsdfError }
+)
+
+// Cannot directly call getStringLength
+getStringLength('bing bong'); // TypeError
+
+// You have to call .try
+getStringLength
+  .try('bing bong')
+  .catchStringEmptyError(() => { /* ... */ })
+  .catchNoAsdfError(() => { /* ... */ })
 ```
 
 ## Async functions
@@ -137,7 +168,8 @@ String matcher checks use `.include`, they are not converted to a `RegExp` befor
 
 ## Functions that return errors instead of throwing
 
-`ts-throws` handles this by trying to match the return value against each provided error.
+`ts-throws` handles this by trying to match the return value against each provided error. In fact, this method is
+encouraged over `throw`ing if possible. Handling returned errors is ~2x faster than thrown errors.
 
 ```ts
 const getStringLength = throws(

@@ -13,6 +13,18 @@ export function throws<
   return Object.assign(fn, { try: (...args: Args) => createCatchEnforcer(fn, args, errors, true) });
 }
 
+export function throwsUnsafe<
+  Args extends any[],
+  Return,
+  const E extends { [key in string]: ErrorMatcher },
+  Fn extends (...args: Args) => Return
+>(
+  fn: Fn,
+  errors: E
+) {
+  return { try: (...args: Args) => createCatchEnforcer(fn, args, errors, true) };
+}
+
 type UnwrapPromise<T extends Promise<unknown>> = T extends Promise<infer V> ? V : never;
 
 type CatchEnforcer<
