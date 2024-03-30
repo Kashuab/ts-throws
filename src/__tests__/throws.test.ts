@@ -20,7 +20,7 @@ describe('throws', () => {
     const fn = createGetStringLengthFunction();
     const getStringLength = throws(fn, { StringEmptyError })
 
-    const length = getStringLength('hello')
+    const length = getStringLength.try('hello')
       .catchStringEmptyError(err => {
         caught = true;
       });
@@ -37,7 +37,7 @@ describe('throws', () => {
       return trimmed.length;
     }, { StringEmptyError })
 
-    const length = await getStringLength('asdf')
+    const length = await getStringLength.try('asdf')
       .catchStringEmptyError(err => {});
 
     expect(length).toBe(4)
@@ -57,7 +57,7 @@ describe('throws', () => {
     try {
       // This is verbose and unnecessary, you can await getStringLength directly
       // Though this ensures that it doesn't return undefined
-      length = await getStringLength('')
+      length = await getStringLength.try('')
         .catchStringEmptyError(err => {
           caught = true;
         })
@@ -88,7 +88,7 @@ describe('throws', () => {
     let length: number | undefined;
 
     try {
-      await getStringLength('asdf')
+      await getStringLength.try('asdf')
         .catchStringEmptyError(err => {
           // shouldn't hit this error
           throw new Error("Expected BadStringError to be caught");
@@ -116,7 +116,7 @@ describe('throws', () => {
       return new StringEmptyError();
     }, { StringEmptyError })
 
-    fn()
+    fn.try()
       .catchStringEmptyError(err => {
         caught = true;
       });
@@ -130,7 +130,7 @@ describe('throws', () => {
     const fn = createGetStringLengthFunction();
     const getStringLength = throws(fn, { StringEmptyError, StringEmptyError2, StringEmptyError3 })
 
-    const length = getStringLength('hello')
+    const length = getStringLength.try('hello')
       .catchStringEmptyError(err => {
         caught = true;
       })
@@ -152,7 +152,7 @@ describe('throws', () => {
 
     let caught = false;
 
-    fn()
+    fn.try()
       .catchSomeError(err => {
         caught = true;
       })
@@ -167,7 +167,7 @@ describe('throws', () => {
 
     caught = false;
 
-    fn2()
+    fn2.try()
       .catchCustomError(err => {
         caught = true;
       })
@@ -182,7 +182,7 @@ describe('throws', () => {
 
     let caught = false;
 
-    fn()
+    fn.try()
       .catchSomeError(err => {
         caught = true;
       })
@@ -197,7 +197,7 @@ describe('throws', () => {
 
     caught = false;
 
-    fn2()
+    fn2.try()
       .catchCustomError(err => {
         caught = true;
       })
@@ -211,7 +211,7 @@ describe('throws', () => {
     const fn = createGetStringLengthFunction();
     const getStringLength = throws(fn, { StringEmptyError, StringEmptyError2, StringEmptyError3 })
 
-    const length = getStringLength('hello')
+    const length = getStringLength.try('hello')
       .catchStringEmptyError2(err => {
         caught = true;
       })
@@ -232,7 +232,7 @@ describe('throws', () => {
     const fn = createGetStringLengthFunction();
     const getStringLength = throws(fn, { StringEmptyError })
 
-    const length = getStringLength(' ')
+    const length = getStringLength.try(' ')
       .catchStringEmptyError(err => {
         caught = true;
       });
@@ -248,7 +248,7 @@ describe('throws', () => {
     const fn = createGetStringLengthFunction();
     const getStringLength = throws(fn, { StringEmptyError })
 
-    const length = getStringLength(' ')
+    const length = getStringLength.try(' ')
       .catchStringEmptyError(err => {
         error = err;
       });
@@ -262,7 +262,7 @@ describe('throws', () => {
     const fn = createGetStringLengthFunction();
     const getStringLength = throws(fn, { StringEmptyError })
 
-    const length = getStringLength('hello');
+    const length = getStringLength.try('hello');
 
     expect(typeof length.catchStringEmptyError).toBe('function');
     expect(fn.mock.lastCall).toBeUndefined();
@@ -273,7 +273,7 @@ describe('throws', () => {
     const getStringLength = throws(fn, { StringEmptyError, StringEmptyError2 })
 
     expect(() => {
-      getStringLength('hello')
+      getStringLength.try('hello')
         .catchStringEmptyError(() => {})
         // @ts-expect-error
         .catchStringEmptyError(() => {})
@@ -285,7 +285,7 @@ describe('throws', () => {
     const getStringLength = throws(fn, { StringEmptyError })
 
     expect(() => {
-      getStringLength('hello')
+      getStringLength.try('hello')
         // @ts-expect-error
         .catchSomeOtherError(() => {})
     }).toThrow()

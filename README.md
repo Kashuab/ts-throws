@@ -20,36 +20,41 @@ const getStringLength = throws(
     return str.length;
   },
   { StringEmptyError, NoAsdfError }
-);
+)
+```
 
-/*
-  `throws` will force you to catch the provided errors.
-  It dynamically generates catch* methods based on the object of errors
-  you provide. The error names will be automatically capitalized.
-*/
+`throws` adds a `try` function which will force you to catch the provided errors. If you don't invoke `try`, the
+function behaves normally. This avoids breaking changes, and allows developers to opt-in when desired.
+It dynamically generates catch* methods based on the object of errors you provide. The error names will be
+automatically capitalized.
 
-let length = getStringLength(' ')
+```ts
+let length = getStringLength.try(' ')
   .catchStringEmptyError(err => console.error('String is empty'))
   .catchNoAsdfError(err => console.error('String cannot be asdf'));
 
 // length is undefined, logged 'String is empty'
 
-length = getStringLength('asdf')
+length = getStringLength.try('asdf')
   .catchStringEmptyError(err => console.error('String is empty'))
   .catchNoAsdfError(err => console.error('String cannot be asdf'));
 
 // length is undefined, logged 'String cannot be asdf'
 
-length = getStringLength(' ')
+length = getStringLength.try(' ')
   .catchStringEmptyError(err => console.error('String is empty'))
 
 // Only one error caught, length is:
 // { catchNoAsdfError: (err: NoAsdfError) => void) => number | undefined }
 // Function logic not invoked until last error is handled with `.catch`
 
-length = getStringLength('hello world')
+length = getStringLength.try('hello world')
   .catchStringEmptyError(err => console.error('String is empty'))
   .catchNoAsdfError(err => console.error('String cannot be asdf'));
+
+// length is 11
+
+length = getStringLength('hello world');
 
 // length is 11
 ```
@@ -73,7 +78,7 @@ const getResponse = throws(
   { BadResponseError }
 );
 
-const response = await getResponse()
+const response = await getResponse.try()
   .catchBadResponseError(err => {
     // Received 400+ error
   });
@@ -100,7 +105,7 @@ const getStringLength = throws(
   { StringEmptyError: /is empty/, NoAsdfError: 'cannot be asdf' }
 );
 
-getStringLength(' ')
+getStringLength.try(' ')
   .catchStringEmptyError(err => {
     // Note: `err` is going to be `unknown` in both of these cases.
     console.error('String is empty')
@@ -111,7 +116,7 @@ getStringLength(' ')
 
 // -> Logs "String is empty"
 
-getStringLength('asdf')
+getStringLength.try('asdf')
   .catchStringEmptyError(err => {
     console.error('String is empty')
   })
@@ -145,7 +150,7 @@ const getStringLength = throws(
   { StringEmptyError: /is empty/, NoAsdfError: 'cannot be asdf' }
 );
 
-getStringLength(' ')
+getStringLength.try(' ')
   .catchStringEmptyError(err => {
     // Note: `err` is going to be `unknown` in both of these cases.
     console.error('String is empty')
@@ -156,7 +161,7 @@ getStringLength(' ')
 
 // -> Logs "String is empty"
 
-getStringLength('asdf')
+getStringLength.try('asdf')
   .catchStringEmptyError(err => {
     console.error('String is empty')
   })
@@ -166,7 +171,7 @@ getStringLength('asdf')
 
 // -> Logs "No asdf error"
 
-const length = getStringLength('hello')
+const length = getStringLength.try('hello')
   .catchStringEmptyError(err => {
     console.error('String is empty')
   })
