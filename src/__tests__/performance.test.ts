@@ -112,7 +112,7 @@ describe('performance', () => {
       const before = performance.now();
 
       while (!state.done) {
-        getStrLenWrappedThrower('')
+        getStrLenWrappedThrower.try('')
           .catchStringEmptyError(err => {
             state.runs++;
           })
@@ -133,7 +133,7 @@ describe('performance', () => {
       const before = performance.now();
 
       while (!state.done) {
-        getStrLenWrappedReturner('')
+        getStrLenWrappedReturner.try('')
           .catchStringEmptyError(err => {
             state.runs++;
           })
@@ -184,7 +184,7 @@ describe('performance', () => {
       const before = performance.now();
 
       while (!state.done) {
-        wrappedSafeFn('')
+        wrappedSafeFn.try('')
           .catchStringEmptyError(() => {})
           .catchStringEmptyError2(() => {})
           .catchStringEmptyError3(() => {})

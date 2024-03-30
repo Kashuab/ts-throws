@@ -4,12 +4,24 @@ type ErrorMatcher = ErrorClass | string | RegExp;
 export function throws<
   Args extends any[],
   Return,
-  const E extends { [key in string]: ErrorMatcher }
+  const E extends { [key in string]: ErrorMatcher },
 >(
   fn: (...args: Args) => Return,
   errors: E
-): (...args: Args) => CatchEnforcer<E, Return> {
-  return (...args: Args) => createCatchEnforcer(fn, args, errors, true);
+): typeof fn & { try: (...args: Args) => CatchEnforcer<E, Return> } {
+  return Object.assign(fn, { try: (...args: Args) => createCatchEnforcer(fn, args, errors, true) });
+}
+
+export function throwsUnsafe<
+  Args extends any[],
+  Return,
+  const E extends { [key in string]: ErrorMatcher },
+  Fn extends (...args: Args) => Return
+>(
+  fn: Fn,
+  errors: E
+) {
+  return { try: (...args: Args) => createCatchEnforcer(fn, args, errors, true) };
 }
 
 type UnwrapPromise<T extends Promise<unknown>> = T extends Promise<infer V> ? V : never;

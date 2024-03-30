@@ -1,6 +1,7 @@
 # `ts-throws`
 
-A tiny library that allows you to wrap functions with enforced error checking.
+A tiny library that allows you to wrap functions with documented error checking. Optionally, you can force consumers
+of a given function to handle errors.
 
 ## Example
 
@@ -20,38 +21,73 @@ const getStringLength = throws(
     return str.length;
   },
   { StringEmptyError, NoAsdfError }
-);
+)
+```
 
-/*
-  `throws` will force you to catch the provided errors.
-  It dynamically generates catch* methods based on the object of errors
-  you provide. The error names will be automatically capitalized.
-*/
+`throws` adds a `try` function which will force you to catch the provided errors. It will also allow direct invocations
+by calling the function normally. This avoids breaking changes, and allows developers to opt-in when desired.
+It dynamically generates catch* methods based on the object of errors you provide. The error names will be
+automatically capitalized.
 
-let length = getStringLength(' ')
+```ts
+let length = getStringLength.try(' ')
   .catchStringEmptyError(err => console.error('String is empty'))
   .catchNoAsdfError(err => console.error('String cannot be asdf'));
 
 // length is undefined, logged 'String is empty'
 
-length = getStringLength('asdf')
+length = getStringLength.try('asdf')
   .catchStringEmptyError(err => console.error('String is empty'))
   .catchNoAsdfError(err => console.error('String cannot be asdf'));
 
 // length is undefined, logged 'String cannot be asdf'
 
-length = getStringLength(' ')
+length = getStringLength.try(' ')
   .catchStringEmptyError(err => console.error('String is empty'))
 
 // Only one error caught, length is:
 // { catchNoAsdfError: (err: NoAsdfError) => void) => number | undefined }
 // Function logic not invoked until last error is handled with `.catch`
 
-length = getStringLength('hello world')
+length = getStringLength.try('hello world')
   .catchStringEmptyError(err => console.error('String is empty'))
   .catchNoAsdfError(err => console.error('String cannot be asdf'));
 
 // length is 11
+
+// Example direct invocation:
+length = getStringLength('hello world');
+// length is 11
+```
+
+## `throwsUnsafe`
+
+If you don't want to allow direct invocations, you can force consumers to handle errors properly via `throwsUnsafe`:
+
+```ts
+import { throwsUnsafe } from 'ts-throws';
+
+class StringEmptyError {}
+class NoAsdfError {}
+
+const getStringLength = throwsUnsafe(
+  (str: string) => {
+    if (!str.trim()) throw new StringEmptyError();
+    if (str === 'asdf') throw new NoAsdfError();
+
+    return str.length;
+  },
+  { StringEmptyError, NoAsdfError }
+)
+
+// Cannot directly call getStringLength
+getStringLength('bing bong'); // TypeError
+
+// You have to call .try
+getStringLength
+  .try('bing bong')
+  .catchStringEmptyError(() => { /* ... */ })
+  .catchNoAsdfError(() => { /* ... */ })
 ```
 
 ## Async functions
@@ -73,7 +109,7 @@ const getResponse = throws(
   { BadResponseError }
 );
 
-const response = await getResponse()
+const response = await getResponse.try()
   .catchBadResponseError(err => {
     // Received 400+ error
   });
@@ -100,7 +136,7 @@ const getStringLength = throws(
   { StringEmptyError: /is empty/, NoAsdfError: 'cannot be asdf' }
 );
 
-getStringLength(' ')
+getStringLength.try(' ')
   .catchStringEmptyError(err => {
     // Note: `err` is going to be `unknown` in both of these cases.
     console.error('String is empty')
@@ -111,7 +147,7 @@ getStringLength(' ')
 
 // -> Logs "String is empty"
 
-getStringLength('asdf')
+getStringLength.try('asdf')
   .catchStringEmptyError(err => {
     console.error('String is empty')
   })
@@ -132,7 +168,8 @@ String matcher checks use `.include`, they are not converted to a `RegExp` befor
 
 ## Functions that return errors instead of throwing
 
-`ts-throws` handles this by trying to match the return value against each provided error.
+`ts-throws` handles this by trying to match the return value against each provided error. In fact, this method is
+encouraged over `throw`ing if possible. Handling returned errors is ~2x faster than thrown errors.
 
 ```ts
 const getStringLength = throws(
@@ -145,7 +182,7 @@ const getStringLength = throws(
   { StringEmptyError: /is empty/, NoAsdfError: 'cannot be asdf' }
 );
 
-getStringLength(' ')
+getStringLength.try(' ')
   .catchStringEmptyError(err => {
     // Note: `err` is going to be `unknown` in both of these cases.
     console.error('String is empty')
@@ -156,7 +193,7 @@ getStringLength(' ')
 
 // -> Logs "String is empty"
 
-getStringLength('asdf')
+getStringLength.try('asdf')
   .catchStringEmptyError(err => {
     console.error('String is empty')
   })
@@ -166,7 +203,7 @@ getStringLength('asdf')
 
 // -> Logs "No asdf error"
 
-const length = getStringLength('hello')
+const length = getStringLength.try('hello')
   .catchStringEmptyError(err => {
     console.error('String is empty')
   })
