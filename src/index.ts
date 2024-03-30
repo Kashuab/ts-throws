@@ -5,11 +5,10 @@ export function throws<
   Args extends any[],
   Return,
   const E extends { [key in string]: ErrorMatcher },
-  Fn extends (...args: Args) => Return
 >(
-  fn: Fn,
+  fn: (...args: Args) => Return,
   errors: E
-): Fn & { try: (...args: Args) => CatchEnforcer<E, Return> } {
+): typeof fn & { try: (...args: Args) => CatchEnforcer<E, Return> } {
   return Object.assign(fn, { try: (...args: Args) => createCatchEnforcer(fn, args, errors, true) });
 }
 
