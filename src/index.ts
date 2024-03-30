@@ -117,21 +117,23 @@ function handleThrownError(err: object | string, catchers: Catcher<ErrorMatcher>
       return err instanceof c.errorMatcher;
     }
 
-    const regex = c.errorMatcher instanceof RegExp ? c.errorMatcher : new RegExp(c.errorMatcher);
+    const matcher = c.errorMatcher instanceof RegExp ? c.errorMatcher : {
+      test: (str: string) => str.includes(c.errorMatcher as string)
+    };
 
     if (typeof err === 'string') {
-      return regex.test(err);
+      return matcher.test(err);
     }
 
     if (typeof err === 'object') {
       if ('name' in err && typeof err.name === 'string') {
-        const nameMatches = regex.test(err.name);
+        const nameMatches = matcher.test(err.name);
 
         if (nameMatches) return true;
       }
 
       if ('message' in err && typeof err.message === 'string') {
-        const messageMatches = regex.test(err.message);
+        const messageMatches = matcher.test(err.message);
 
         if (messageMatches) return true;
       }
