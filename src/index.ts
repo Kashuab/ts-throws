@@ -86,14 +86,14 @@ function createCatchEnforcer<
           if (returnValue instanceof Promise) {
             return returnValue
               .catch(err => {
-                return handleThrownError(err, state.catchers);
+                return invokeMatchedErrorCatcher(err, state.catchers);
               })
           }
 
           return returnValue;
         } catch (err) {
           if (!err) throw err;
-          return handleThrownError(err, state.catchers);
+          return invokeMatchedErrorCatcher(err, state.catchers);
         }
       } else {
         return catchObj;
@@ -111,7 +111,7 @@ function createCatchEnforcer<
   return enforcer;
 }
 
-function handleThrownError(err: object | string, catchers: Catcher<ErrorMatcher>[]) {
+function invokeMatchedErrorCatcher(err: object | string, catchers: Catcher<ErrorMatcher>[]) {
   const catcher = catchers.find(c => {
     if (typeof c.errorMatcher === 'function') {
       return err instanceof c.errorMatcher;
