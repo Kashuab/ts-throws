@@ -130,6 +130,55 @@ When a string or regex is provided as the matcher, `ts-throws` will check the fo
 
 String matcher checks use `.include`, they are not converted to a `RegExp` before testing.
 
+## Functions that return errors instead of throwing
+
+`ts-throws` handles this by trying to match the return value against each provided error.
+
+```ts
+const getStringLength = throws(
+  (str: string) => {
+    if (!str.trim()) return new Error('String is empty');
+    if (str === 'asdf') return 'cannot be asdf';
+
+    return str.length;
+  },
+  { StringEmptyError: /is empty/, NoAsdfError: 'cannot be asdf' }
+);
+
+getStringLength(' ')
+  .catchStringEmptyError(err => {
+    // Note: `err` is going to be `unknown` in both of these cases.
+    console.error('String is empty')
+  })
+  .catchNoAsdfError(err => {
+    console.error('No asdf error')
+  });
+
+// -> Logs "String is empty"
+
+getStringLength('asdf')
+  .catchStringEmptyError(err => {
+    console.error('String is empty')
+  })
+  .catchNoAsdfError(err => {
+    console.error('No asdf error')
+  });
+
+// -> Logs "No asdf error"
+
+const length = getStringLength('hello')
+  .catchStringEmptyError(err => {
+    console.error('String is empty')
+  })
+  .catchNoAsdfError(err => {
+    console.error('No asdf error')
+  });
+
+// `length` is 5
+```
+
+Of course, this works with custom error classes as well.
+
 ## Pitfalls
 
 - `class CustomError extends Error {}`

@@ -109,6 +109,21 @@ describe('throws', () => {
     expect(caught).toBe(true);
   })
 
+  it('handles errors in return value', () => {
+    let caught = false;
+
+    const fn = throws(() => {
+      return new StringEmptyError();
+    }, { StringEmptyError })
+
+    fn()
+      .catchStringEmptyError(err => {
+        caught = true;
+      });
+
+    expect(caught).toBe(true);
+  });
+
   it('works with multiple errors', () => {
     let caught = false;
 
