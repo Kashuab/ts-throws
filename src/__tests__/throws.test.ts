@@ -21,9 +21,12 @@ describe('throws', () => {
     const getStringLength = throws(fn, { StringEmptyError })
 
     const length = getStringLength.try('hello')
-      .catchStringEmptyError(err => {
+    .catch({
+      StringEmptyError: err => {
         caught = true;
-      });
+        return 3;
+      }
+    });
 
     expect(length).toBe(5);
     expect(caught).toBe(false);
@@ -38,7 +41,7 @@ describe('throws', () => {
     }, { StringEmptyError })
 
     const length = await getStringLength.try('asdf')
-      .catchStringEmptyError(err => {});
+    .catch({ StringEmptyError: err => {} });
 
     expect(length).toBe(4)
   });
@@ -58,9 +61,11 @@ describe('throws', () => {
       // This is verbose and unnecessary, you can await getStringLength directly
       // Though this ensures that it doesn't return undefined
       length = await getStringLength.try('')
-        .catchStringEmptyError(err => {
+      .catch({
+        StringEmptyError: err => {
           caught = true;
-        })
+        }
+      })
     } catch (err) {
       // expect().not.toThrow doesn't seem to work with async functions
       console.error(err);
@@ -89,12 +94,14 @@ describe('throws', () => {
 
     try {
       await getStringLength.try('asdf')
-        .catchStringEmptyError(err => {
-          // shouldn't hit this error
-          throw new Error("Expected BadStringError to be caught");
-        })
-        .catchBadStringError(err => {
-          caught = true;
+        .catch({
+          StringEmptyError: err => {
+            // shouldn't hit this error
+            throw new Error("Expected BadStringError to be caught");
+          },
+          BadStringError: err => {
+            caught = true;
+          }
         })
         .then(len => {
           length = len
@@ -117,9 +124,11 @@ describe('throws', () => {
     }, { StringEmptyError })
 
     fn.try()
-      .catchStringEmptyError(err => {
+    .catch({
+      StringEmptyError: err => {
         caught = true;
-      });
+      }
+    });
 
     expect(caught).toBe(true);
   });
@@ -131,15 +140,17 @@ describe('throws', () => {
     const getStringLength = throws(fn, { StringEmptyError, StringEmptyError2, StringEmptyError3 })
 
     const length = getStringLength.try('hello')
-      .catchStringEmptyError(err => {
+    .catch({
+      StringEmptyError: err => {
         caught = true;
-      })
-      .catchStringEmptyError2(err => {
+      },
+      StringEmptyError2: err => {
         caught = true;
-      })
-      .catchStringEmptyError3(err => {
+      },
+      StringEmptyError3: err => {
         caught = true;
-      })
+      }
+    })
 
     expect(length).toBe(5);
     expect(caught).toBe(false);
@@ -153,9 +164,11 @@ describe('throws', () => {
     let caught = false;
 
     fn.try()
-      .catchSomeError(err => {
+    .catch({
+      SomeError: err => {
         caught = true;
-      })
+      }
+    });
 
     class CustomError extends Error {
       name = "hello"
@@ -168,9 +181,11 @@ describe('throws', () => {
     caught = false;
 
     fn2.try()
-      .catchCustomError(err => {
+    .catch({
+      CustomError: err => {
         caught = true;
-      })
+      }
+    })
 
     expect(caught).toBe(true);
   })
@@ -183,9 +198,11 @@ describe('throws', () => {
     let caught = false;
 
     fn.try()
-      .catchSomeError(err => {
+    .catch({
+      SomeError: err => {
         caught = true;
-      })
+      }
+    })
 
     class CustomError extends Error {
       name = "hello"
@@ -198,9 +215,11 @@ describe('throws', () => {
     caught = false;
 
     fn2.try()
-      .catchCustomError(err => {
+    .catch({
+      CustomError: err => {
         caught = true;
-      })
+      }
+    })
 
     expect(caught).toBe(true);
   })
@@ -212,15 +231,17 @@ describe('throws', () => {
     const getStringLength = throws(fn, { StringEmptyError, StringEmptyError2, StringEmptyError3 })
 
     const length = getStringLength.try('hello')
-      .catchStringEmptyError2(err => {
+    .catch({
+      StringEmptyError2: err => {
         caught = true;
-      })
-      .catchStringEmptyError(err => {
+      },
+      StringEmptyError: err => {
         caught = true;
-      })
-      .catchStringEmptyError3(err => {
+      },
+      StringEmptyError3: err => {
         caught = true;
-      })
+      },
+    })
 
     expect(length).toBe(5);
     expect(caught).toBe(false);
@@ -233,9 +254,11 @@ describe('throws', () => {
     const getStringLength = throws(fn, { StringEmptyError })
 
     const length = getStringLength.try(' ')
-      .catchStringEmptyError(err => {
+    .catch({
+      StringEmptyError: err => {
         caught = true;
-      });
+      },
+    })
 
     expect(length).toBeUndefined();
     expect(caught).toBe(true);
@@ -249,9 +272,11 @@ describe('throws', () => {
     const getStringLength = throws(fn, { StringEmptyError })
 
     const length = getStringLength.try(' ')
-      .catchStringEmptyError(err => {
+    .catch({
+      StringEmptyError: err => {
         error = err;
-      });
+      }
+    })
 
     expect(length).toBeUndefined();
     expect(error).toBeInstanceOf(StringEmptyError);
@@ -264,7 +289,7 @@ describe('throws', () => {
 
     const length = getStringLength.try('hello');
 
-    expect(typeof length.catchStringEmptyError).toBe('function');
+    expect(typeof length.catch).toBe('function');
     expect(fn.mock.lastCall).toBeUndefined();
   });
 
@@ -277,28 +302,24 @@ describe('throws', () => {
     expect(length).toBe(5);
   });
 
-  it('throws error if duplicate error handler is present', () => {
-    const fn = createGetStringLengthFunction();
-    const getStringLength = throws(fn, { StringEmptyError, StringEmptyError2 })
+  it('narrows down error return types', () => {
+    class SomeError {
+      someProp = 'nope'
+    }
 
-    expect(() => {
-      getStringLength.try('hello')
-        .catchStringEmptyError(() => {})
-        // @ts-expect-error
-        .catchStringEmptyError(() => {})
-    }).toThrow()
-  });
+    const uh = (str: string) => {
+      if (str === 'bonk') {
+        return new SomeError();
+      }
 
-  it('reports TS error when uncatchable error is used', () => {
-    const fn = createGetStringLengthFunction();
-    const getStringLength = throws(fn, { StringEmptyError })
+      return 3;
+    }
 
-    expect(() => {
-      getStringLength.try('hello')
-        // @ts-expect-error
-        .catchSomeOtherError(() => {})
-    }).toThrow()
-  });
+    const fn = throws(uh, { SomeError });
+    const returnVal = fn('beep');
+
+    // returnVal.someProp
+  })
 });
 
 describe('throwsUnsafe', () => {

@@ -23,7 +23,7 @@ const makeReturner = () => (str: string) => {
 
 const makeWrappedThrower = () => throws((str: string) => {
   const trimmed = str.trim();
-  if (trimmed.length === 0) throw new StringEmptyError();
+  if (trimmed.length === 0) throw new StringEmptyError5();
 
   return trimmed.length;
 }, {
@@ -36,7 +36,7 @@ const makeWrappedThrower = () => throws((str: string) => {
 
 const makeWrappedReturner = () => throws((str: string) => {
   const trimmed = str.trim();
-  if (trimmed.length === 0) return new StringEmptyError();
+  if (trimmed.length === 0) return new StringEmptyError5();
 
   return trimmed.length;
 }, {
@@ -113,13 +113,15 @@ describe('performance', () => {
 
       while (!state.done) {
         getStrLenWrappedThrower.try('')
-          .catchStringEmptyError(err => {
-            state.runs++;
-          })
-          .catchStringEmptyError2(() => {})
-          .catchStringEmptyError3(() => {})
-          .catchStringEmptyError4(() => {})
-          .catchStringEmptyError5(() => {})
+        .catch({
+          StringEmptyError: () => {},
+          StringEmptyError2: () => {},
+          StringEmptyError3: () => {},
+          StringEmptyError4: () => {},
+          StringEmptyError5: () => {
+            state.runs++
+          },
+        })
 
         const diff = performance.now() - before;
         if (diff >= 1000) state.done = true;
@@ -134,13 +136,16 @@ describe('performance', () => {
 
       while (!state.done) {
         getStrLenWrappedReturner.try('')
-          .catchStringEmptyError(err => {
+        .catch({
+          StringEmptyError: err => {
+          },
+          StringEmptyError2: () => {},
+          StringEmptyError3: () => {},
+          StringEmptyError4: () => {},
+          StringEmptyError5: () => {
             state.runs++;
-          })
-          .catchStringEmptyError2(() => {})
-          .catchStringEmptyError3(() => {})
-          .catchStringEmptyError4(() => {})
-          .catchStringEmptyError5(() => {})
+          },
+        })
 
         const diff = performance.now() - before;
         if (diff >= 1000) state.done = true;
@@ -185,11 +190,13 @@ describe('performance', () => {
 
       while (!state.done) {
         wrappedSafeFn.try('')
-          .catchStringEmptyError(() => {})
-          .catchStringEmptyError2(() => {})
-          .catchStringEmptyError3(() => {})
-          .catchStringEmptyError4(() => {})
-          .catchStringEmptyError5(() => {});
+        .catch({
+          StringEmptyError: () => {},
+          StringEmptyError2: () => {},
+          StringEmptyError3: () => {},
+          StringEmptyError4: () => {},
+          StringEmptyError5: () => {},
+        })
 
         state.runs++;
 
